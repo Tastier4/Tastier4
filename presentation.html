@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Presentation Deck</title>
+
+<!-- =====================================================================
+     PRESENTATION DECK - Single-file interactive deck
+     ---------------------------------------------------------------------
+     PERSONALIZZAZIONE RAPIDA:
+       1. Modifica i testi direttamente nei <section class="slide">.
+       2. Aggiungi/rimuovi slide duplicando un blocco <section class="slide">
+          all'interno di <main id="deck">: i pallini e il contatore si
+          aggiornano automaticamente.
+       3. Cambia i gradienti modificando le variabili --grad-1 ... --grad-N
+          in :root, oppure le classi .slide:nth-child(...) qui sotto.
+       4. Font: il deck usa solo font di sistema; se vuoi Google Fonts,
+          decommenta il <link> qui sotto e cambia --font-sans.
+     ===================================================================== -->
+
+<!--
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+-->
+
+<style>
+  /* ---------- Variabili globali (personalizza qui colori e font) ---------- */
+  :root {
+    --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --text:        #ffffff;
+    --text-muted:  rgba(255, 255, 255, 0.78);
+    --surface:     rgba(255, 255, 255, 0.10);
+    --surface-2:   rgba(255, 255, 255, 0.18);
+    --border:      rgba(255, 255, 255, 0.28);
+    --shadow-lg:   0 30px 60px -20px rgba(0, 0, 0, 0.45);
+    --radius:      18px;
+    --ease:        cubic-bezier(0.22, 1, 0.36, 1);
+
+    /* Gradienti per slide (una variabile per slide, riusata sotto) */
+    --grad-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --grad-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --grad-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --grad-4: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    --grad-5: linear-gradient(135deg, #0ba360 0%, #3cba92 100%);
+    --grad-6: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  }
+
+  /* ---------- Reset minimale ---------- */
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    font-family: var(--font-sans);
+    color: var(--text);
+    background: #0b0d12;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button { font-family: inherit; color: inherit; }
+
+  /* ---------- Contenitore deck ---------- */
+  #deck {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    touch-action: pan-y; /* permette scroll verticale nativo se serve */
+  }
+
+  /* ---------- Singola slide ---------- */
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(20px, 5vw, 80px);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(40px);
+    transition:
+      opacity 600ms var(--ease),
+      transform 600ms var(--ease),
+      visibility 0s linear 600ms;
+  }
+  .slide.is-active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+    transition:
+      opacity 600ms var(--ease),
+      transform 600ms var(--ease),
+      visibility 0s linear 0s;
+  }
+  .slide.is-prev {
+    transform: translateX(-40px); /* slide uscente verso sinistra */
+  }
+
+  /* Gradienti per slide: estendi il pattern per aggiungere altre slide. */
+  .slide:nth-child(1) { background: var(--grad-1); }
+  .slide:nth-child(2) { background: var(--grad-2); }
+  .slide:nth-child(3) { background: var(--grad-3); }
+  .slide:nth-child(4) { background: var(--grad-4); }
+  .slide:nth-child(5) { background: var(--grad-5); }
+  .slide:nth-child(6) { background: var(--grad-6); }
+
+  /* Pattern decorativo morbido sul fondo, identico per tutte le slide. */
+  .slide::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.18), transparent 35%),
+      radial-gradient(circle at 85% 80%, rgba(0, 0, 0, 0.18), transparent 40%);
+    pointer-events: none;
+  }
+
+  /* ---------- Contenuto slide ---------- */
+  .slide-content {
+    position: relative;
+    z-index: 1;
+    max-width: min(900px, 100%);
+    width: 100%;
+    text-align: center;
+    animation: none;
+  }
+  .slide.is-active .slide-content {
+    animation: rise 700ms var(--ease) 80ms both;
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .eyebrow {
+    display: inline-block;
+    padding: 6px 14px;
+    margin-bottom: clamp(16px, 2.5vw, 24px);
+    font-size: clamp(11px, 1.2vw, 13px);
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .slide h1 {
+    margin: 0 0 clamp(14px, 2vw, 22px);
+    font-size: clamp(2rem, 6vw, 4.2rem);
+    line-height: 1.08;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    text-shadow: 0 2px 24px rgba(0, 0, 0, 0.18);
+  }
+
+  .slide h2 {
+    margin: 0 0 clamp(20px, 3vw, 32px);
+    font-size: clamp(1.5rem, 4.2vw, 2.8rem);
+    line-height: 1.15;
+    font-weight: 800;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+
+  .lede {
+    margin: 0 auto;
+    max-width: 60ch;
+    font-size: clamp(1rem, 1.8vw, 1.25rem);
+    line-height: 1.6;
+    color: var(--text-muted);
+    text-wrap: pretty;
+  }
+
+  .slide ul {
+    margin: clamp(8px, 2vw, 16px) auto 0;
+    padding: 0;
+    max-width: 640px;
+    list-style: none;
+    text-align: left;
+    display: grid;
+    gap: 12px;
+  }
+  .slide ul li {
+    position: relative;
+    padding: 14px 18px 14px 48px;
+    font-size: clamp(0.95rem, 1.6vw, 1.1rem);
+    line-height: 1.45;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .slide ul li::before {
+    content: '';
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    width: 18px;
+    height: 18px;
+    margin-top: -9px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.18);
+  }
+
+  /* CTA — pulsante chiamata all'azione */
+  .cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: clamp(22px, 3vw, 34px);
+    padding: 14px 28px;
+    font-size: clamp(0.95rem, 1.5vw, 1.05rem);
+    font-weight: 600;
+    color: #111;
+    background: #fff;
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    box-shadow: var(--shadow-lg);
+    transition: transform 200ms var(--ease), box-shadow 200ms var(--ease);
+  }
+  .cta:hover { transform: translateY(-2px); box-shadow: 0 36px 70px -20px rgba(0,0,0,0.5); }
+  .cta:active { transform: translateY(0); }
+  .cta::after {
+    content: '→';
+    transition: transform 200ms var(--ease);
+  }
+  .cta:hover::after { transform: translateX(4px); }
+
+  /* Stats / quote (slide opzionali) */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: clamp(14px, 2vw, 24px);
+    margin-top: clamp(24px, 4vw, 40px);
+  }
+  .stat {
+    padding: clamp(18px, 2.5vw, 28px);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .stat .num {
+    display: block;
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .stat .lbl {
+    display: block;
+    margin-top: 6px;
+    font-size: clamp(0.85rem, 1.2vw, 0.95rem);
+    color: var(--text-muted);
+  }
+
+  blockquote {
+    margin: 0 auto;
+    padding: clamp(20px, 3vw, 32px);
+    max-width: 720px;
+    font-size: clamp(1.1rem, 2.4vw, 1.6rem);
+    line-height: 1.45;
+    font-style: italic;
+    background: var(--surface);
+    border-left: 4px solid rgba(255, 255, 255, 0.85);
+    border-radius: 12px;
+    text-align: left;
+  }
+  blockquote cite {
+    display: block;
+    margin-top: 14px;
+    font-size: clamp(0.85rem, 1.3vw, 1rem);
+    font-style: normal;
+    color: var(--text-muted);
+  }
+
+  /* ---------- Contatore (alto a destra) ---------- */
+  #counter {
+    position: fixed;
+    top: clamp(14px, 2.5vw, 24px);
+    right: clamp(14px, 2.5vw, 24px);
+    padding: 8px 16px;
+    font-size: clamp(13px, 1.4vw, 15px);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 10;
+    user-select: none;
+  }
+  #counter .sep { opacity: 0.55; margin: 0 4px; }
+
+  /* ---------- Controlli (prev / next) ---------- */
+  .nav-btn {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    width: clamp(44px, 5vw, 56px);
+    height: clamp(44px, 5vw, 56px);
+    display: grid;
+    place-items: center;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: background 200ms var(--ease), transform 200ms var(--ease), opacity 200ms;
+    z-index: 10;
+  }
+  .nav-btn:hover { background: var(--surface-2); }
+  .nav-btn:active { transform: translateY(-50%) scale(0.95); }
+  .nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .nav-btn.prev { left: clamp(10px, 2vw, 24px); }
+  .nav-btn.next { right: clamp(10px, 2vw, 24px); }
+  .nav-btn svg { width: 40%; height: 40%; }
+
+  /* ---------- Pallini indicatori ---------- */
+  #dots {
+    position: fixed;
+    bottom: clamp(18px, 3vw, 32px);
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    padding: 8px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 10;
+  }
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: width 250ms var(--ease), background 250ms var(--ease);
+  }
+  .dot:hover { background: rgba(255, 255, 255, 0.7); }
+  .dot.is-active {
+    width: 28px;
+    background: #fff;
+    border-radius: 999px;
+  }
+
+  /* ---------- Responsive: nasconde frecce su schermi molto piccoli ---------- */
+  @media (max-width: 480px) {
+    .nav-btn { display: none; } /* su mobile si usa lo swipe */
+    #dots { padding: 6px 10px; }
+    .dot { width: 8px; height: 8px; }
+    .dot.is-active { width: 22px; }
+    .slide ul li { padding: 12px 14px 12px 42px; }
+  }
+
+  /* ---------- Riduzione movimenti ---------- */
+  @media (prefers-reduced-motion: reduce) {
+    .slide, .slide.is-active .slide-content, .cta, .dot, .nav-btn {
+      transition-duration: 0.001ms !important;
+      animation: none !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+  <!-- Contatore slide (es. "3 / 5") -->
+  <div id="counter" aria-live="polite">
+    <span id="current">1</span><span class="sep">/</span><span id="total">5</span>
+  </div>
+
+  <!-- Pulsante: slide precedente -->
+  <button class="nav-btn prev" id="prevBtn" aria-label="Slide precedente">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="15 18 9 12 15 6"></polyline>
+    </svg>
+  </button>
+
+  <!-- Pulsante: slide successiva -->
+  <button class="nav-btn next" id="nextBtn" aria-label="Slide successiva">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </button>
+
+  <!-- =================================================================
+       DECK: aggiungi/rimuovi <section class="slide"> qui sotto.
+       Ogni slide è centrata e ha un proprio gradiente (definito via
+       :nth-child nel CSS). Puoi rimescolarle senza toccare il JS.
+       ================================================================= -->
+  <main id="deck">
+
+    <!-- ============ SLIDE 1 — Copertina ============ -->
+    <section class="slide" aria-roledescription="slide">
+      <div class="slide-content">
+        <span class="eyebrow">Presentation Deck</span>
+        <h1>Costruisci storie che restano impresse</h1>
+        <p class="lede">
+          Un template di presentazione moderno, leggero e completamente
+          personalizzabile. Naviga con frecce, swipe o i pulsanti laterali.
+        </p>
+        <button class="cta" onclick="goTo(1)">Inizia il tour</button>
+      </div>
+    </section>
+
+    <!-- ============ SLIDE 2 — Elenco / Features ============ -->
+    <section class="slide" aria-roledescription="slide">
+      <div class="slide-content">
+        <span class="eyebrow">Cosa include</span>
+        <h2>Tutto ciò che ti serve, in un solo file</h2>
+        <ul>
+          <li>Navigazione completa: tastiera, mouse, touch swipe</li>
+          <li>Transizioni fluide tra slide con effetto fade + scorrimento</li>
+          <li>Layout responsive con tipografia in <code>clamp()</code></li>
+          <li>Sei gradienti predefiniti — facili da estendere</li>
+          <li>Zero dipendenze esterne, zero build step</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============ SLIDE 3 — Testo / Storytelling ============ -->
+    <section class="slide" aria-roledescription="slide">
+      <div class="slide-content">
+        <span class="eyebrow">La nostra missione</span>
+        <h2>Idee chiare, esposte con eleganza</h2>
+        <p class="lede">
+          Ogni slide è progettata per mettere in risalto un singolo concetto.
+          Titoli grandi, testi bilanciati e spaziature generose guidano lo
+          sguardo del pubblico esattamente dove serve, senza distrazioni.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ SLIDE 4 — Statistiche ============ -->
+    <section class="slide" aria-roledescription="slide">
+      <div class="slide-content">
+        <span class="eyebrow">I numeri</span>
+        <h2>Risultati che parlano da soli</h2>
+        <div class="stats">
+          <div class="stat"><span class="num">98%</span><span class="lbl">Soddisfazione</span></div>
+          <div class="stat"><span class="num">3×</span><span class="lbl">Più engagement</span></div>
+          <div class="stat"><span class="num">24/7</span><span class="lbl">Sempre online</span></div>
+          <div class="stat"><span class="num">+150</span><span class="lbl">Clienti felici</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SLIDE 5 — Citazione ============ -->
+    <section class="slide" aria-roledescription="slide">
+      <div class="slide-content">
+        <span class="eyebrow">Testimonianza</span>
+        <blockquote>
+          “Una presentazione efficace non racconta solo cosa fai, ma fa
+          sentire al pubblico perché conta.”
+          <cite>— Anna Rossi, Brand Strategist</cite>
+        </blockquote>
+      </div>
+    </section>
+
+    <!-- ============ SLIDE 6 — CTA finale ============ -->
+    <section class="slide" aria-roledescription="slide">
+      <div class="slide-content">
+        <span class="eyebrow">Pronto a iniziare?</span>
+        <h1>Trasforma le tue idee in slide memorabili</h1>
+        <p class="lede">
+          Duplica questo file, personalizza i testi e i colori, e in pochi
+          minuti avrai un deck pronto da presentare.
+        </p>
+        <button class="cta" onclick="goTo(0)">Ricomincia il tour</button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Pallini indicatori (generati dal JS in base al numero di slide) -->
+  <div id="dots" role="tablist" aria-label="Indicatore slide"></div>
+
+<script>
+  /* =====================================================================
+     LOGICA DECK
+     ---------------------------------------------------------------------
+     - Conta le slide presenti nel DOM (così aggiungerle è plug-and-play).
+     - Aggiorna stato attivo, contatore, pallini e pulsanti.
+     - Gestisce tastiera (← → Home End Spazio) e swipe touch.
+     ===================================================================== */
+  (function () {
+    const deck     = document.getElementById('deck');
+    const slides   = Array.from(deck.querySelectorAll('.slide'));
+    const dotsWrap = document.getElementById('dots');
+    const prevBtn  = document.getElementById('prevBtn');
+    const nextBtn  = document.getElementById('nextBtn');
+    const curEl    = document.getElementById('current');
+    const totEl    = document.getElementById('total');
+
+    let index = 0;
+    const total = slides.length;
+    totEl.textContent = total;
+
+    /* ---------- Costruzione pallini ---------- */
+    slides.forEach((_, i) => {
+      const b = document.createElement('button');
+      b.className = 'dot';
+      b.type = 'button';
+      b.setAttribute('role', 'tab');
+      b.setAttribute('aria-label', `Vai alla slide ${i + 1}`);
+      b.addEventListener('click', () => goTo(i));
+      dotsWrap.appendChild(b);
+    });
+    const dots = Array.from(dotsWrap.children);
+
+    /* ---------- Rendering stato corrente ---------- */
+    function render() {
+      slides.forEach((s, i) => {
+        s.classList.toggle('is-active', i === index);
+        s.classList.toggle('is-prev',   i < index);
+      });
+      dots.forEach((d, i) => d.classList.toggle('is-active', i === index));
+      curEl.textContent = index + 1;
+      prevBtn.disabled = index === 0;
+      nextBtn.disabled = index === total - 1;
+    }
+
+    /* ---------- API pubblica (esposta a window per i bottoni CTA) ---------- */
+    window.goTo = function (i) {
+      index = Math.max(0, Math.min(total - 1, i));
+      render();
+    };
+    window.next = () => goTo(index + 1);
+    window.prev = () => goTo(index - 1);
+
+    prevBtn.addEventListener('click', prev);
+    nextBtn.addEventListener('click', next);
+
+    /* ---------- Tastiera ---------- */
+    document.addEventListener('keydown', (e) => {
+      switch (e.key) {
+        case 'ArrowRight':
+        case 'PageDown':
+        case ' ':
+          e.preventDefault(); next(); break;
+        case 'ArrowLeft':
+        case 'PageUp':
+          e.preventDefault(); prev(); break;
+        case 'Home':
+          e.preventDefault(); goTo(0); break;
+        case 'End':
+          e.preventDefault(); goTo(total - 1); break;
+      }
+    });
+
+    /* ---------- Swipe touch ----------
+       Soglia: 50px orizzontali, scarto verticale < 80px per evitare
+       di catturare gli scroll. */
+    let touchStartX = 0, touchStartY = 0, touchActive = false;
+    deck.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) return;
+      touchActive = true;
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    deck.addEventListener('touchend', (e) => {
+      if (!touchActive) return;
+      touchActive = false;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - touchStartX;
+      const dy = t.clientY - touchStartY;
+      if (Math.abs(dx) > 50 && Math.abs(dy) < 80) {
+        if (dx < 0) next(); else prev();
+      }
+    });
+
+    /* ---------- Init ---------- */
+    render();
+  })();
+</script>
+</body>
+</html>
